@@ -22,10 +22,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore MV-Plugins.sln
 
       - name: Build Plugin
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build MV-Plugins.sln --configuration Release --no-restore
 
       - name: Create Release and Upload Asset
         uses: softprops/action-gh-release@v2
