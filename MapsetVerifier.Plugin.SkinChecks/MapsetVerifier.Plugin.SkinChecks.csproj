@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>MapsetVerifier.Plugin.SkinChecks</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MapsetVerifier.Framework">
+      <HintPath>..\lib\MapsetVerifier.Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="MapsetVerifier.Parser">
+      <HintPath>..\lib\MapsetVerifier.Parser.dll</HintPath>
+    </Reference>
+    <Reference Include="MapsetVerifier.Logging">
+      <HintPath>..\lib\MapsetVerifier.Logging.dll</HintPath>
+    </Reference>
+    <Reference Include="SixLabors.ImageSharp">
+      <HintPath>..\lib\SixLabors.ImageSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="4.3.1" />
+  </ItemGroup>
+
+  <Target Name="CopyToCustomChecks" AfterTargets="Build" Condition="'$(SkipCustomChecksCopy)' != 'true' and '$(APPDATA)' != ''">
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(APPDATA)\Mapset Verifier Externals\CustomChecks" />
+  </Target>
+</Project>

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Remove="MV-Robust-Snapshot.Tests\**" />
+    <Compile Remove="MapsetVerifier.Plugin.SkinChecks\**" />
   </ItemGroup>
 
   <ItemGroup>

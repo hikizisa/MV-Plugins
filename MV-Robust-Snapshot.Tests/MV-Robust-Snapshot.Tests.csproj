@@ -33,9 +33,13 @@
     <Reference Include="Realm">
       <HintPath>../lib/Realm.dll</HintPath>
     </Reference>
+    <Reference Include="SixLabors.ImageSharp">
+      <HintPath>../lib/SixLabors.ImageSharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../MV-Robust-Snapshot.csproj" />
+    <ProjectReference Include="../MapsetVerifier.Plugin.SkinChecks/MapsetVerifier.Plugin.SkinChecks.csproj" />
   </ItemGroup>
 </Project>

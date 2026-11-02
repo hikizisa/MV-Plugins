@@ -30,6 +30,8 @@ jobs:
       - name: Create Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: bin/Release/net9.0/MapsetVerifier.Plugin.CustomSnapshots.dll
+          files: |
+            bin/Release/net9.0/MapsetVerifier.Plugin.CustomSnapshots.dll
+            MapsetVerifier.Plugin.SkinChecks/bin/Release/net9.0/MapsetVerifier.Plugin.SkinChecks.dll
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
