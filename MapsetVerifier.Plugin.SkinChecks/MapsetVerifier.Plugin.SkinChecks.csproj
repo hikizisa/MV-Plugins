@@ -4,18 +4,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>MapsetVerifier.Plugin.SkinChecks</AssemblyName>
+    <HostAssemblyDirectory Condition="'$(HostAssemblyDirectory)' == ''">$(MSBuildProjectDirectory)/../lib</HostAssemblyDirectory>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="MapsetVerifier.Framework">
-      <HintPath>..\lib\MapsetVerifier.Framework.dll</HintPath>
-    </Reference>
-    <Reference Include="MapsetVerifier.Parser">
-      <HintPath>..\lib\MapsetVerifier.Parser.dll</HintPath>
-    </Reference>
-    <Reference Include="MapsetVerifier.Logging">
-      <HintPath>..\lib\MapsetVerifier.Logging.dll</HintPath>
-    </Reference>
+    <Reference Include="$(HostAssemblyDirectory)/MapsetVerifier.Framework.dll" />
+    <Reference Include="$(HostAssemblyDirectory)/MapsetVerifier.Parser.dll" />
+    <Reference Include="$(HostAssemblyDirectory)/MapsetVerifier.Logging.dll" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,7 +18,7 @@
     <PackageReference Include="Serilog" Version="4.3.1" />
   </ItemGroup>
 
-  <Target Name="CopyToCustomChecks" AfterTargets="Build" Condition="'$(SkipCustomChecksCopy)' != 'true' and '$(APPDATA)' != ''">
+  <Target Name="CopyToCustomChecks" AfterTargets="Build" Condition="'$(DeployPlugin)' == 'true' and '$(SkipCustomChecksCopy)' != 'true' and '$(APPDATA)' != ''">
     <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="$(APPDATA)\Mapset Verifier Externals\CustomChecks" />
   </Target>
 </Project>

@@ -1,64 +1,80 @@
-# MV-Robust-Snapshot
+# MV-Plugins
 
-A standalone plugin for **Mapset Verifier** that replaces the default `TimingPoints` snapshot translator with a robust alignment implementation using Dynamic Time Warping (DTW) and RANSAC.
-
-## Features
-
-- **Robust Timing Alignment**: Correctly aligns timing changes during map edits even with section-wide time-shifts (e.g. mp3 offset adjustments).
-- **Sub-Snap Jitter Filtering**: Distinguishes between global section shifts and minor local timing adjustments.
-- **Standalone Design**: Built as a plugin DLL that can be compiled and deployed separately. It overrides the default timing translator at runtime without requiring edits to the core Mapset Verifier installation.
+A collection of standalone plugins for [**Mapset Verifier**](https://github.com/Naxess/MapsetVerifier), providing advanced snapshot translation and comprehensive Ranking Criteria skin verification.
 
 ---
 
-## How It Works
+## Included Plugins
 
-Mapset Verifier's custom checks are loaded dynamically at startup. This plugin extends `GeneralCheck` so that it is instantiated during the custom checks loading phase. 
+### 1. Robust Snapshots (`MapsetVerifier.Plugin.CustomSnapshots.dll`)
+Replaces Mapset Verifier's default `TimingPoints`, `HitObjects`, and `Events` snapshot translators with robust alignment algorithms:
+- **DTW & RANSAC Alignment**: Accurately aligns timing changes during map edits even with section-wide time-shifts (e.g. MP3 offset adjustments).
+- **Sub-Snap Jitter Filtering**: Distinguishes between global section shifts and minor local timing adjustments.
+- **Break Shift Grouping**: Automatically groups uniform break time changes with section timing shifts.
+- **Unstacked Position Tracking**: Uses raw unstacked coordinates for hit object matching to prevent stacking-induced ghost diffs.
 
-Upon instantiation, it performs a one-time Reflection hook that:
-1. Resolves and initializes Mapset Verifier's static `TranslatorRegistry`.
-2. Locates the private list of active translators.
-3. Removes the default `TimingTranslator` handling the `TimingPoints` section.
-4. Registers `CustomTimingTranslator` in its place.
+### 2. Skin Checks (`MapsetVerifier.Plugin.SkinChecks.dll`)
+Enforces the official [osu! Ranking Criteria (Skinning)](https://osu.ppy.sh/wiki/en/Rules/Ranking_criteria) and [Skin Set List](https://osu.ppy.sh/wiki/en/Rules/Ranking_criteria/Skin_set_list) across all modes (**osu!standard**, **osu!taiko**, **osu!catch**, and **osu!mania**):
+- **Complete Skin Sets**: Verifies that when any gameplay element of a set is skinned in a beatmap folder, all required elements in that set are present (e.g., `cursor.png` + `cursortrail.png`, `hitcircle.png` + `hitcircleoverlay` + `approachcircle.png`).
+- **Grouped Digit Sets**: Ensures digits are fully skinned together (e.g., `default-0` through `default-9`, `score-0` through `score-9`).
+- **Catch Hitbox Dimensions**: Enforces strict pixel dimensions for osu!catch hitboxes:
+  - Fruits: $128 \times 128$ px ($256 \times 256$ @2x)
+  - Drops: $82 \times 103$ px ($164 \times 206$ @2x)
+  - Catcher: $306 \times 320$ px ($612 \times 640$ @2x)
+- **Catch Rules**: Checks that custom catchers declare `Version: 2` or higher in `skin.ini`, and verifies fruit sprites are greyscale for combo tintability.
+- **Comboburst Limits**: Checks that comboburst assets do not exceed the $768$ px maximum height.
+- **Element Visibility**: Ensures gameplay elements are not completely transparent or 0-alpha (with exemption for `cursormiddle.png` and `fruit-drop-empty.png`).
+- **Mode Mismatches**: Warns when skin assets for a different mode (e.g., Taiko or Mania assets) are bundled into a set without matching difficulties.
+- **File Integrity**: Flags 0-byte or corrupted image files.
 
 ---
 
 ## Build Guide
 
 ### Prerequisites
-- [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- [.NET 9 SDK](https://dotnet.microsoft.com/download) or [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
 ### Compilation
-Clone the repository and build the project using the .NET CLI:
+Clone the repository and build the entire plugin solution using the .NET CLI:
 ```bash
-dotnet build
+dotnet restore MV-Plugins.sln
+dotnet build MV-Plugins.sln -c Release --no-restore
 ```
 
-This will produce the compiled assembly `MapsetVerifier.Plugin.CustomSnapshots.dll` in the output folder `bin/Debug/net9.0/`.
+This compiles both plugin DLLs into their respective output folders:
+- `bin/Release/net9.0/MapsetVerifier.Plugin.CustomSnapshots.dll`
+- `MapsetVerifier.Plugin.SkinChecks/bin/Release/net9.0/MapsetVerifier.Plugin.SkinChecks.dll`
+
+### Building Against a Custom Host Version
+The bundled `lib/` references target .NET 9. To build against a specific Mapset Verifier installation (e.g., a .NET 10 host), set `HostAssemblyDirectory`:
+```powershell
+dotnet restore MV-Plugins.sln -p:TargetFramework=net10.0
+dotnet build MV-Plugins.sln -c Release --no-restore -p:TargetFramework=net10.0 -p:HostAssemblyDirectory="C:\path\to\matching-host-assemblies" -p:DeployPlugin=true
+```
+
+> **Note**: Automatic deployment to `%APPDATA%` is opt-in via `-p:DeployPlugin=true` to prevent accidental overwrites during local development.
 
 ---
 
 ## Installation & Usage
 
-1. Copy the compiled `MapsetVerifier.Plugin.CustomSnapshots.dll` file.
-2. Paste it into your Mapset Verifier Custom Checks folder:
+1. Download the latest compiled DLLs from the [Releases](https://github.com/hikizisa/MV-Plugins/releases) page (or compile locally).
+2. Copy the DLL files you wish to use into your Mapset Verifier Custom Checks folder:
    - **Windows**: `%APPDATA%\Mapset Verifier Externals\CustomChecks\`
    - **Linux**: `~/.local/share/Mapset Verifier Externals/CustomChecks/`
-
-The bundled `lib/` references target the older .NET 9 host. Build against the assemblies and .NET target of the installed Mapset Verifier version before deploying: a host API change such as `TimingLine.SvMult` changing from `float` to `double` is binary incompatible even when the assembly names match.
-
-For a .NET 10 installation, set `HostAssemblyDirectory` to a directory containing the matching host DLLs (extract them first if the host is published as a single executable):
-
-```powershell
-dotnet restore -p:TargetFramework=net10.0
-dotnet build -c Release --no-restore -p:TargetFramework=net10.0 -p:HostAssemblyDirectory="C:\path\to\matching-host-assemblies" -p:DeployPlugin=true
-```
-
-Automatic installation is opt-in through `DeployPlugin=true`, so a normal development build cannot overwrite an installed plugin with an incompatible build.
-
 3. Restart Mapset Verifier. The application logs will display:
    ```text
    [CustomSnapshotsPlugin] Initializing snapshot translator replacement hook...
-   [CustomSnapshotsPlugin] Removed 1 default TimingPoints translator(s).
    [CustomSnapshotsPlugin] Registered custom TimingPoints translator successfully.
+   [SkinChecksPlugin] MapsetVerifier Skin Checks Plugin loaded successfully.
    ```
-4. The application will now use the robust timing comparison logic automatically when translating snapshot differences!
+4. Mapset Verifier will now automatically use the enhanced snapshot translators and run the skin verification checks!
+
+---
+
+## Running Tests
+
+Run the full automated test suite (37 tests) with:
+```bash
+dotnet test MV-Plugins.sln
+```
