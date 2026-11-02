@@ -16,12 +16,10 @@
     <Reference Include="MapsetVerifier.Logging">
       <HintPath>..\lib\MapsetVerifier.Logging.dll</HintPath>
     </Reference>
-    <Reference Include="SixLabors.ImageSharp">
-      <HintPath>..\lib\SixLabors.ImageSharp.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="Serilog" Version="4.3.1" />
   </ItemGroup>
 

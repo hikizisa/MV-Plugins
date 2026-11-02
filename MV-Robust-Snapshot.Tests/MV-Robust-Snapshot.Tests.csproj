@@ -12,6 +12,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
     <PackageReference Include="Serilog" Version="4.3.1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,15 +27,6 @@
     </Reference>
     <Reference Include="MapsetVerifier.Logging">
       <HintPath>../lib/MapsetVerifier.Logging.dll</HintPath>
-    </Reference>
-    <Reference Include="osu.Game">
-      <HintPath>../lib/osu.Game.dll</HintPath>
-    </Reference>
-    <Reference Include="Realm">
-      <HintPath>../lib/Realm.dll</HintPath>
-    </Reference>
-    <Reference Include="SixLabors.ImageSharp">
-      <HintPath>../lib/SixLabors.ImageSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 
