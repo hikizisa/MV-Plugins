@@ -7,11 +7,12 @@ A collection of standalone plugins for [**Mapset Verifier**](https://github.com/
 ## Included Plugins
 
 ### 1. Robust Snapshots (`MapsetVerifier.Plugin.CustomSnapshots.dll`)
-Replaces Mapset Verifier's default `TimingPoints`, `HitObjects`, and `Events` snapshot translators with robust alignment algorithms:
-- **DTW & RANSAC Alignment**: Accurately aligns timing changes during map edits even with section-wide time-shifts (e.g. MP3 offset adjustments).
-- **Sub-Snap Jitter Filtering**: Distinguishes between global section shifts and minor local timing adjustments.
+Replaces Mapset Verifier's default `BeatmapDiffer` snapshot comparison with robust alignment algorithms while seamlessly powering MV 2.2's new interactive in-game visualizers:
+- **DTW & RANSAC Alignment**: Accurately aligns timing changes during map edits even with multi-second section-wide time-shifts (e.g. MP3 offset adjustments, removing base MV's hardcoded 1000 ms limit).
+- **Transformation / Flip Detection**: Detects pattern flips (Ctrl+H horizontal flip, Ctrl+J vertical flip, dual flip, and Catch flip) and reports them cleanly as flipped patterns rather than 100% deletions and additions.
+- **Unstacked Position Tracking**: Uses raw unstacked coordinates for hit object matching to prevent stacking-cascade ghost diffs.
+- **Sub-Snap Jitter Filtering**: Distinguishes between global section shifts and minor local timing adjustments or snap divisor roundings.
 - **Break Shift Grouping**: Automatically groups uniform break time changes with section timing shifts.
-- **Unstacked Position Tracking**: Uses raw unstacked coordinates for hit object matching to prevent stacking-induced ghost diffs.
 
 ### 2. Skin Checks (`MapsetVerifier.Plugin.SkinChecks.dll`)
 Enforces the official [osu! Ranking Criteria (Skinning)](https://osu.ppy.sh/wiki/en/Rules/Ranking_criteria) and [Skin Set List](https://osu.ppy.sh/wiki/en/Rules/Ranking_criteria/Skin_set_list) across all modes (**osu!standard**, **osu!taiko**, **osu!catch**, and **osu!mania**):
@@ -32,24 +33,23 @@ Enforces the official [osu! Ranking Criteria (Skinning)](https://osu.ppy.sh/wiki
 ## Build Guide
 
 ### Prerequisites
-- [.NET 9 SDK](https://dotnet.microsoft.com/download) or [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
 
 ### Compilation
-Clone the repository and build the entire plugin solution using the .NET CLI:
+Build the entire plugin solution using the .NET CLI:
 ```bash
 dotnet restore MV-Plugins.sln
 dotnet build MV-Plugins.sln -c Release --no-restore
 ```
 
 This compiles both plugin DLLs into their respective output folders:
-- `bin/Release/net9.0/MapsetVerifier.Plugin.CustomSnapshots.dll`
-- `MapsetVerifier.Plugin.SkinChecks/bin/Release/net9.0/MapsetVerifier.Plugin.SkinChecks.dll`
+- `bin/Release/net10.0/MapsetVerifier.Plugin.CustomSnapshots.dll`
+- `MapsetVerifier.Plugin.SkinChecks/bin/Release/net10.0/MapsetVerifier.Plugin.SkinChecks.dll`
 
 ### Building Against a Custom Host Version
-The bundled `lib/` references target .NET 9. To build against a specific Mapset Verifier installation (e.g., a .NET 10 host), set `HostAssemblyDirectory`:
+To deploy directly to your local Mapset Verifier installation:
 ```powershell
-dotnet restore MV-Plugins.sln -p:TargetFramework=net10.0
-dotnet build MV-Plugins.sln -c Release --no-restore -p:TargetFramework=net10.0 -p:HostAssemblyDirectory="C:\path\to\matching-host-assemblies" -p:DeployPlugin=true
+dotnet build MV-Plugins.sln -c Release -p:DeployPlugin=true
 ```
 
 > **Note**: Automatic deployment to `%APPDATA%` is opt-in via `-p:DeployPlugin=true` to prevent accidental overwrites during local development.
@@ -64,17 +64,18 @@ dotnet build MV-Plugins.sln -c Release --no-restore -p:TargetFramework=net10.0 -
    - **Linux**: `~/.local/share/Mapset Verifier Externals/CustomChecks/`
 3. Restart Mapset Verifier. The application logs will display:
    ```text
-   [CustomSnapshotsPlugin] Initializing snapshot translator replacement hook...
-   [CustomSnapshotsPlugin] Registered custom TimingPoints translator successfully.
+   [CustomSnapshotsPlugin] Initializing robust snapshot differ hook...
+   [DetourHelper] Successfully applied x64 detour at 0x... -> 0x...
+   [CustomSnapshotsPlugin] Hooked BeatmapDiffer.Diff successfully. Robust RANSAC/DTW alignment active.
    [SkinChecksPlugin] MapsetVerifier Skin Checks Plugin loaded successfully.
    ```
-4. Mapset Verifier will now automatically use the enhanced snapshot translators and run the skin verification checks!
+4. Mapset Verifier will now automatically use the enhanced snapshot differ and run the skin verification checks!
 
 ---
 
 ## Running Tests
 
-Run the full automated test suite (37 tests) with:
+Run the full automated test suite (25 tests) with:
 ```bash
 dotnet test MV-Plugins.sln
 ```

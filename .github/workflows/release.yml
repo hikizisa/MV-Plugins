@@ -19,10 +19,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore dependencies
         run: dotnet restore MV-Plugins.sln
+
+      - name: Run Tests
+        run: dotnet test MV-Plugins.sln --configuration Release --no-restore
 
       - name: Build Plugin
         run: dotnet build MV-Plugins.sln --configuration Release --no-restore
@@ -31,7 +34,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            bin/Release/net9.0/MapsetVerifier.Plugin.CustomSnapshots.dll
-            MapsetVerifier.Plugin.SkinChecks/bin/Release/net9.0/MapsetVerifier.Plugin.SkinChecks.dll
+            bin/Release/net10.0/MapsetVerifier.Plugin.CustomSnapshots.dll
+            MapsetVerifier.Plugin.SkinChecks/bin/Release/net10.0/MapsetVerifier.Plugin.SkinChecks.dll
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

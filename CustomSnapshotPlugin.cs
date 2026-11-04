@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using MapsetVerifier.Framework.Objects;
 using MapsetVerifier.Framework.Objects.Attributes;
 using MapsetVerifier.Framework.Objects.Metadata;
 using MapsetVerifier.Parser.Objects;
-using MapsetVerifier.Snapshots;
-using MapsetVerifier.Snapshots.Objects;
 using Serilog;
 
 namespace MapsetVerifier.Plugin.CustomSnapshots
@@ -21,59 +20,51 @@ namespace MapsetVerifier.Plugin.CustomSnapshots
             InitializeHook();
         }
 
-        private static void InitializeHook()
+        public static bool IsHooked => Hooked;
+
+        public static void InitializeHook()
         {
             if (Hooked) return;
 
             try
             {
-                Log.Information("[CustomSnapshotsPlugin] Initializing snapshot translator replacement hook...");
+                Log.Information("[CustomSnapshotsPlugin] Initializing robust snapshot differ hook...");
 
-                // Force initialization of default translators
-                var translatorsList = TranslatorRegistry.GetTranslators();
+                // Detect host snapshot engine
+                // MapsetVerifier 2.2+: MapsetVerifier.Snapshots.Diffing.BeatmapDiffer
+                var beatmapDifferType = typeof(MapsetVerifier.Snapshots.Diffing.BeatmapDiffer);
 
-                // Get private static field 'translators' via reflection
-                var field = typeof(TranslatorRegistry).GetField("translators", BindingFlags.Static | BindingFlags.NonPublic);
-                if (field == null)
+                if (beatmapDifferType != null)
                 {
-                    Log.Error("[CustomSnapshotsPlugin] Could not find private field 'translators' in TranslatorRegistry.");
-                    return;
-                }
+                    var targetMethod = beatmapDifferType.GetMethod("Diff", BindingFlags.Public | BindingFlags.Static);
+                    var hookMethod = typeof(RobustBeatmapDiffer).GetMethod("Diff", BindingFlags.Public | BindingFlags.Static);
 
-                if (field.GetValue(null) is List<DiffTranslator> translators)
-                {
-                    // Find and remove existing TimingPoints translator
-                    int removedCount = translators.RemoveAll(t => t.Section == "TimingPoints");
-                    Log.Information("[CustomSnapshotsPlugin] Removed {Count} default TimingPoints translator(s).", removedCount);
-
-                    // Add our custom translator
-                    var customTranslator = new CustomTimingTranslator();
-                    translators.Add(customTranslator);
-                    Log.Information("[CustomSnapshotsPlugin] Registered custom TimingPoints translator successfully.");
-
-                    // Find and remove existing HitObjects translator
-                    int removedHitObjectsCount = translators.RemoveAll(t => t.Section == "HitObjects");
-                    Log.Information("[CustomSnapshotsPlugin] Removed {Count} default HitObjects translator(s).", removedHitObjectsCount);
-
-                    // Add our custom HitObjects translator
-                    var customHitObjectsTranslator = new CustomHitObjectsTranslator();
-                    translators.Add(customHitObjectsTranslator);
-                    Log.Information("[CustomSnapshotsPlugin] Registered custom HitObjects translator successfully.");
-
-                    translators.RemoveAll(t => t.Section == "Events");
-                    translators.Add(new CustomEventsTranslator());
-                    Log.Information("[CustomSnapshotsPlugin] Registered custom Events translator successfully.");
+                    if (targetMethod != null && hookMethod != null)
+                    {
+                        if (DetourHelper.TryDetour(targetMethod, hookMethod))
+                        {
+                            Log.Information("[CustomSnapshotsPlugin] Hooked BeatmapDiffer.Diff successfully. Robust RANSAC/DTW alignment active.");
+                            Hooked = true;
+                            return;
+                        }
+                        else
+                        {
+                            Log.Error("[CustomSnapshotsPlugin] Failed to detour BeatmapDiffer.Diff.");
+                        }
+                    }
+                    else
+                    {
+                        Log.Error("[CustomSnapshotsPlugin] Could not find Diff method on BeatmapDiffer or RobustBeatmapDiffer.");
+                    }
                 }
                 else
                 {
-                    Log.Error("[CustomSnapshotsPlugin] Field 'translators' is not of type List<DiffTranslator>.");
+                    Log.Warning("[CustomSnapshotsPlugin] BeatmapDiffer not found in MapsetVerifier.Snapshots.");
                 }
-
-                Hooked = true;
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "[CustomSnapshotsPlugin] Failed to replace snapshot translator.");
+                Log.Error(ex, "[CustomSnapshotsPlugin] Exception while initializing snapshot hook.");
             }
         }
 
@@ -81,7 +72,7 @@ namespace MapsetVerifier.Plugin.CustomSnapshots
             new CheckMetadata
             {
                 Category = "Snapshots",
-                Message = "Custom Snapshots Plugin",
+                Message = "Custom Robust Snapshots Plugin",
                 Author = "Self"
             };
 
